@@ -1,0 +1,37 @@
+#!/bin/bash
+
+ACCOUNT="nobody@sifteo.com"
+LOGFILE="/tmp/sifte-install.log"
+
+HOME_OWNER=`stat -f "%u:%g" $HOME`
+
+echo "Starting installation..." > $LOGFILE 2>&1 
+echo -e "ENV: \n===\n`env`\n===\n" >> $LOGFILE 2>&1 
+
+# Create preferences file
+PREFERENCES=com.sifteo.Siftrunner.plist
+/usr/libexec/PlistBuddy $DSTROOT/Preferences/$PREFERENCES -c "Set userSession.email $ACCOUNT" >> $LOGFILE 2>&1 
+mv $DSTROOT/Preferences/$PREFERENCES "$HOME/Library/Preferences/" >> $LOGFILE 2>&1 
+chown $HOME_OWNER "$HOME/Library/Preferences/$PREFERENCES" >> $LOGFILE 2>&1
+
+# Move sifteo apps to the correct place in the user's Library/Application Support/ folder
+mkdir -p "$HOME/Library/Application Support/Sifteo/Siftrunner/Users/$ACCOUNT/Apps" >> $LOGFILE 2>&1 
+mv $DSTROOT/Siftapps/* "$HOME/Library/Application Support/Sifteo/Siftrunner/Users/$ACCOUNT/Apps" >> $LOGFILE 2>&1
+chown -R $HOME_OWNER "$HOME/Library/Application Support/Sifteo" >> $LOGFILE 2>&1
+
+# Unzip Siftrunner.app to Applications
+rm -rf /Applications/Siftrunner.app
+SIFTRUNNER_ZIP=Siftrunner-1.1.5.zip
+unzip -q $DSTROOT/$SIFTRUNNER_ZIP -d /Applications >> $LOGFILE 2>&1 
+
+# Cleanup
+rmdir $DSTROOT/Preferences >> $LOGFILE 2>&1 
+rmdir $DSTROOT/Siftapps >> $LOGFILE 2>&1 
+rm $DSTROOT/$SIFTRUNNER_ZIP
+rmdir $DSTROOT
+
+defaults read "$HOME/Library/Preferences/com.sifteo.Siftrunner" > /dev/null
+
+#rm $LOGFILE
+
+exit 0
